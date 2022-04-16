@@ -1,4 +1,4 @@
-import nn
+import nn, backend
 
 class PerceptronModel(object):
     def __init__(self, dimensions):
@@ -26,7 +26,11 @@ class PerceptronModel(object):
             x: a node with shape (1 x dimensions)
         Returns: a node containing a single number (the score)
         """
+
         "*** YOUR CODE HERE ***"
+
+        weights = self.get_weights() # Get the weights
+        return nn.DotProduct(weights, x) # Return the dot product of the weights and x
 
     def get_prediction(self, x):
         """
@@ -34,13 +38,40 @@ class PerceptronModel(object):
 
         Returns: 1 or -1
         """
+
         "*** YOUR CODE HERE ***"
+
+        run_x = self.run(x) # Get the dot product of the weights and x
+        scalar = nn.as_scalar(run_x)
+        if scalar >= 0: # If the dot product is greated than or equal to 0, return 1
+            return 1
+        else: # Otherwise return 0
+            return -1
 
     def train(self, dataset):
         """
         Train the perceptron until convergence.
         """
+
         "*** YOUR CODE HERE ***"
+
+        batch_size = 1 # Batch size
+        while True:
+            total = 0 # Number of (x, y) in dataset
+            total_correct = 0 # Number of (x,y) in dataset that do not need to be updated
+
+            for x, y in dataset.iterate_once(batch_size): # Iterate through dataset
+                total+=1 # Add one to total
+                predicted_y = self.get_prediction(x) # Get prediction
+                y_value = nn.as_scalar(y)
+
+                if predicted_y == y_value:# If the prediction is the same as the real value, add 1 to total_correct
+                    total_correct+=1
+                else: # Otherwise, update weights
+                    self.w.update(y_value, x)
+            
+            if total == total_correct: # If the weights never needed to be updated, then exit the loop
+                break
 
 class RegressionModel(object):
     """
