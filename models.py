@@ -1,4 +1,6 @@
+from cmath import pi
 import nn, backend
+import math
 
 class PerceptronModel(object):
     def __init__(self, dimensions):
@@ -61,6 +63,7 @@ class PerceptronModel(object):
             total_correct = 0 # Number of (x,y) in dataset that do not need to be updated
 
             for x, y in dataset.iterate_once(batch_size): # Iterate through dataset
+
                 total+=1 # Add one to total
                 predicted_y = self.get_prediction(x) # Get prediction
                 y_value = nn.as_scalar(y)
@@ -81,7 +84,18 @@ class RegressionModel(object):
     """
     def __init__(self):
         # Initialize your model parameters here
+
         "*** YOUR CODE HERE ***"
+
+        self.low = -2*pi
+        self.high = 2*pi
+
+        self.hidden = 400
+
+        self.w1 = nn.Parameter(1, self.hidden)
+        self.b1 = nn.Parameter(1, self.hidden)
+        self.w2 = nn.Parameter(self.hidden, 1)
+        self.b2 = nn.Parameter(1, 1)
 
     def run(self, x):
         """
@@ -92,7 +106,18 @@ class RegressionModel(object):
         Returns:
             A node with shape (batch_size x 1) containing predicted y-values
         """
+
         "*** YOUR CODE HERE ***"
+        
+        xw1 = nn.Linear(x, self.w1)
+        predicted_y = nn.AddBias(xw1, self.b1)
+
+        relu = nn.ReLU(predicted_y)
+
+        reluw2 = nn.Linear(relu, self.w2)
+        f = nn.AddBias(reluw2, self.b2)
+
+        return f
 
     def get_loss(self, x, y):
         """
@@ -104,13 +129,39 @@ class RegressionModel(object):
                 to be used for training
         Returns: a loss node
         """
-        "*** YOUR CODE HERE ***"
+        "*** YOUR CODE HERE ***" 
+
+        predicted_y = self.run(x)
+        return nn.SquareLoss(predicted_y, y)
 
     def train(self, dataset):
         """
         Trains the model.
         """
+
         "*** YOUR CODE HERE ***"
+
+        multiplier = -0.005
+
+        while True:
+            total_loss = 0
+            num_data = 0
+            for x, y in dataset.iterate_once(1):
+                num_data+=1
+
+                loss = self.get_loss(x, y)
+                total_loss += nn.as_scalar(loss)
+
+                grad_wrt_w1, grad_wrt_w2, grad_wrt_b1, grad_wrt_b2 = nn.gradients([self.w1, self.w2, self.b1, self.b2], loss)
+
+                self.w1.update(multiplier, grad_wrt_w1)
+                self.w2.update(multiplier, grad_wrt_w2)
+                self.b1.update(multiplier, grad_wrt_b1)
+                self.b2.update(multiplier, grad_wrt_b2)
+
+            print(total_loss/num_data)
+            if total_loss/num_data < 0.02:
+                break
 
 class DigitClassificationModel(object):
     """
