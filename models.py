@@ -87,12 +87,13 @@ class RegressionModel(object):
 
         "*** YOUR CODE HERE ***"
 
-        self.low = -2*pi
-        self.high = 2*pi
-
+        self.multiplier = -0.005
         self.hidden = 400
+        self.batch = 1
 
-        self.w1 = nn.Parameter(1, self.hidden)
+        self.loss_limit = 0.02
+
+        self.w1 = nn.Parameter(self.batch, self.hidden)
         self.b1 = nn.Parameter(1, self.hidden)
         self.w2 = nn.Parameter(self.hidden, 1)
         self.b2 = nn.Parameter(1, 1)
@@ -109,6 +110,8 @@ class RegressionModel(object):
 
         "*** YOUR CODE HERE ***"
         
+        # Predict values using f(x) = relu(x*w1 +  b1)*w2 + b2 formula
+
         xw1 = nn.Linear(x, self.w1)
         predicted_y = nn.AddBias(xw1, self.b1)
 
@@ -131,6 +134,8 @@ class RegressionModel(object):
         """
         "*** YOUR CODE HERE ***" 
 
+        # Calculate loss
+
         predicted_y = self.run(x)
         return nn.SquareLoss(predicted_y, y)
 
@@ -141,26 +146,23 @@ class RegressionModel(object):
 
         "*** YOUR CODE HERE ***"
 
-        multiplier = -0.005
-
-        while True:
-            total_loss = 0
+        while True: # Keep running until loss is less than the limit
+            total_loss = 0 # Use this and num_data to calculate average loss across the dataset
             num_data = 0
-            for x, y in dataset.iterate_once(1):
+            for x, y in dataset.iterate_once(self.batch): # iterate through dataset
                 num_data+=1
 
-                loss = self.get_loss(x, y)
+                loss = self.get_loss(x, y) # get loss
                 total_loss += nn.as_scalar(loss)
 
                 grad_wrt_w1, grad_wrt_w2, grad_wrt_b1, grad_wrt_b2 = nn.gradients([self.w1, self.w2, self.b1, self.b2], loss)
 
-                self.w1.update(multiplier, grad_wrt_w1)
-                self.w2.update(multiplier, grad_wrt_w2)
-                self.b1.update(multiplier, grad_wrt_b1)
-                self.b2.update(multiplier, grad_wrt_b2)
+                self.w1.update(self.multiplier, grad_wrt_w1) # Update values
+                self.w2.update(self.multiplier, grad_wrt_w2)
+                self.b1.update(self.multiplier, grad_wrt_b1)
+                self.b2.update(self.multiplier, grad_wrt_b2)
 
-            print(total_loss/num_data)
-            if total_loss/num_data < 0.02:
+            if total_loss/num_data < self.loss_limit: # Check if average loss is less than the limit
                 break
 
 class DigitClassificationModel(object):
