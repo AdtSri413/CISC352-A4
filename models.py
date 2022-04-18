@@ -183,6 +183,17 @@ class DigitClassificationModel(object):
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
 
+        self.batch = 50 # Trial and error
+        self.multiplier = -0.1
+        self.hidden = 200
+
+        self.w1 = nn.Parameter(784, self.hidden)
+        self.b1 = nn.Parameter(1, self.hidden)
+        self.w2 = nn.Parameter(self.hidden, self.hidden)
+        self.b2 = nn.Parameter(1, self.hidden)
+        self.w3 = nn.Parameter(self.hidden, 10)
+        self.b3 = nn.Parameter(1, 10)
+
     def run(self, x):
         """
         Runs the model for a batch of examples.
@@ -199,6 +210,23 @@ class DigitClassificationModel(object):
         """
         "*** YOUR CODE HERE ***"
 
+        # Predict values using f(x) = relu(relu(x * w1 +  b1) * w2 + b2) * w3 + b3 formula
+
+        xw1 = nn.Linear(x, self.w1)
+        predicted_y = nn.AddBias(xw1, self.b1)
+
+        relu = nn.ReLU(predicted_y)
+
+        reluw2 = nn.Linear(relu, self.w2)
+        predicted_y2 = nn.AddBias(reluw2, self.b2)
+
+        relu2 = nn.ReLU(predicted_y2)
+
+        reluw3 = nn.Linear(relu2, self.w3)
+        f = nn.AddBias(reluw3, self.b3)
+
+        return f
+
     def get_loss(self, x, y):
         """
         Computes the loss for a batch of examples.
@@ -214,9 +242,30 @@ class DigitClassificationModel(object):
         """
         "*** YOUR CODE HERE ***"
 
+        # get loss
+
+        predicted_y = self.run(x)
+        return nn.SoftmaxLoss(predicted_y, y)
+
     def train(self, dataset):
         """
         Trains the model.
         """
         "*** YOUR CODE HERE ***"
+        
+        while True: # Keep running until loss is less than the limit
+
+            for x, y in dataset.iterate_once(self.batch): # iterate through dataset
+
+                loss = self.get_loss(x, y) # get loss
+
+                grad_wrt_w1, grad_wrt_w2, grad_wrt_b1, grad_wrt_b2 = nn.gradients([self.w1, self.w2, self.b1, self.b2], loss)
+
+                self.w1.update(self.multiplier, grad_wrt_w1) # Update values
+                self.w2.update(self.multiplier, grad_wrt_w2)
+                self.b1.update(self.multiplier, grad_wrt_b1)
+                self.b2.update(self.multiplier, grad_wrt_b2)
+
+            if dataset.get_validation_accuracy() > 0.975: # Check if accuracy is over 97.5 (higher than 97 for buffer room)
+                break
 
